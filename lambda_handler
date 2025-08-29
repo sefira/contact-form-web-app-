@@ -1,0 +1,71 @@
+import json
+import boto3
+import os
+
+def lambda_handler(event, context):
+    print(event) # This line will log the incoming request object
+    ses_client = boto3.client('ses', region_name=os.environ['AWS_REGION'])
+    
+    # Extract data from the POST request body
+    try:
+        # Assuming API Gateway is configured with Lambda Proxy Integration
+        body = json.loads(event['body'])
+        sender_name = body.get('name', 'N/A')
+        sender_email = body.get('email', 'N/A')
+        message = body.get('message', 'No message provided.')
+        
+        if not all([sender_name, sender_email, message]):
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'message': 'Missing required fields: name, email, or message.'})
+            }
+
+    except Exception as e:
+        return {
+            'statusCode': 400,
+            'body': json.dumps({'message': 'Invalid request body format.'})
+        }
+
+    # Recipient and Sender Email
+    # Note: For production, you would typically use a verified domain, but for this project, a single verified address works.
+    RECIPIENT_EMAIL = 'your-verified-email-address@example.com' 
+    SENDER_EMAIL = 'your-verified-email-address@example.com' # Must be a verified email/domain in SES
+
+    # Email Subject and Body
+    subject = f"New Contact Form Submission from {sender_name}"
+    email_body = f"""
+    New contact message received:
+    Name: {sender_name}
+    Email: {sender_email}
+    Message: 
+    {message}
+    """
+    
+    try:
+        response = ses_client.send_email(
+            Source=SENDER_EMAIL,
+            Destination={
+                'ToAddresses': [RECIPIENT_EMAIL]
+            },
+            Message={
+                'Subject': {
+                    'Data': subject
+                },
+                'Body': {
+                    'Text': {
+                        'Data': email_body
+                    }
+                }
+            }
+        )
+        
+        return {
+            'statusCode': 200,
+            'body': json.dumps({'message': 'Email sent successfully!', 'message_id': response['MessageId']})
+        }
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'message': 'Failed to send email.'})
+        }
