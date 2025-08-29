@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Form</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+    <!-- Contact Form Container -->
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-lg space-y-6">
+        <h1 class="text-3xl font-bold text-center text-gray-800">Contact Us</h1>
+        <p class="text-center text-gray-600">
+            Please fill out the form below to get in touch.
+        </p>
+        
+        <form id="contactForm" class="space-y-4">
+            <!-- Name Input -->
+            <div>
+                <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+                <input type="text" id="name" name="name" required
+                       class="mt-1 block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out">
+            </div>
+
+            <!-- Email Input -->
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                <input type="email" id="email" name="email" required
+                       class="mt-1 block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out">
+            </div>
+
+            <!-- Message Textarea -->
+            <div>
+                <label for="message" class="block text-sm font-medium text-gray-700">Message</label>
+                <textarea id="message" name="message" rows="4" required
+                          class="mt-1 block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
+            </div>
+            
+            <!-- Submit Button -->
+            <div>
+                <button type="submit" id="submitBtn"
+                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
+                    Send Message
+                </button>
+            </div>
+            
+            <!-- Status Message Area -->
+            <div id="statusMessage" class="text-center text-sm font-medium"></div>
+        </form>
+    </div>
+
+    <script>
+        // Get form elements
+        const form = document.getElementById('contactForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const statusMessage = document.getElementById('statusMessage');
+
+        // Replace this with your actual API Gateway Invoke URL
+        const API_GATEWAY_URL = 'https://rqf1g3vz83.execute-api.us-east-1.amazonaws.com/prod/contact';
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Disable the button and show a loading state
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+            statusMessage.textContent = '';
+            statusMessage.className = "text-center text-sm font-medium";
+
+            try {
+                // Get form data
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
+
+                // Send the POST request to API Gateway
+                const response = await fetch(API_GATEWAY_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    statusMessage.textContent = 'Success! Your message has been sent.';
+                    statusMessage.classList.add('text-green-600');
+                    form.reset(); // Reset the form after success
+                } else {
+                    statusMessage.textContent = `Error: ${result.body || 'Failed to send message.'}`;
+                    statusMessage.classList.add('text-red-600');
+                }
+
+            } catch (error) {
+                console.error('Fetch error:', error);
+                statusMessage.textContent = 'An error occurred. Please try again later.';
+                statusMessage.classList.add('text-red-600');
+            } finally {
+                // Re-enable the button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Message';
+            }
+        });
+    </script>
+
+</body>
+</html>
